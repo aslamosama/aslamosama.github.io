@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc-markdown-css-theme" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Supercharging Search and Navigation with fzf and rg</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/skylighting-solarized-theme.css" />
+</head>
+<body>
+
+<header>
+<h1 class="title">Supercharging Search and Navigation with <code>fzf</code> and <code>rg</code></h1>
+<blockquote class="metadata">
+</blockquote>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <strong>Contents</strong><label for="contents">⊕</label>
+  <input type="checkbox" id="contents">
+  <ul>
+  <li><a href="#tools-used" id="toc-tools-used">Tools Used</a></li>
+  <li><a href="#features" id="toc-features">Features</a></li>
+  <li><a href="#the-script-rg-fzf" id="toc-the-script-rg-fzf">The Script: <code>rg-fzf</code></a>
+  <ul>
+  <li><a href="#cleanup-temporary-files-and-initialize-search-directory" id="toc-cleanup-temporary-files-and-initialize-search-directory">1. Cleanup Temporary Files and Initialize Search Directory</a></li>
+  <li><a href="#configure-rg-ripgrep-search" id="toc-configure-rg-ripgrep-search">2. Configure <code>rg</code> (ripgrep) Search</a></li>
+  <li><a href="#dynamic-search-query" id="toc-dynamic-search-query">3. Dynamic Search Query</a></li>
+  <li><a href="#fzf-header-configuration" id="toc-fzf-header-configuration">4. FZF Header Configuration</a></li>
+  <li><a href="#fzf-command-configuration" id="toc-fzf-command-configuration">5. FZF Command Configuration</a></li>
+  </ul></li>
+  <li><a href="#integration-with-lf-file-manager" id="toc-integration-with-lf-file-manager">Integration with <code>lf</code> File Manager</a>
+  <ul>
+  <li><a href="#example-workflow" id="toc-example-workflow">Example Workflow</a></li>
+  </ul></li>
+  <li><a href="#why-it-works" id="toc-why-it-works">Why It Works</a></li>
+  <li><a href="#try-it-yourself" id="toc-try-it-yourself">Try It Yourself</a></li>
+  </ul>
+</nav>
+
+<main>
+<p>Finding specific content in a project can be tedious, especially with deeply nested directories and large codebases. To make this process faster and more efficient, I use a custom script that combines <a href="https://github.com/BurntSushi/ripgrep"><strong>rg</strong> (ripgrep)</a> and <a href="https://github.com/junegunn/fzf"><strong>fzf</strong></a>. Here’s a breakdown of how the script works and why it can be a game-changer for your workflow.</p>
+<hr />
+<h2 id="tools-used">Tools Used</h2>
+<ol type="1">
+<li><a href="https://github.com/BurntSushi/ripgrep"><strong>rg</strong> (ripgrep)</a>: A blazing-fast search tool for text in files.</li>
+<li><a href="https://github.com/junegunn/fzf"><strong>fzf</strong></a>: A powerful fuzzy finder for interactive searching.</li>
+<li><a href="https://github.com/sharkdp/bat"><strong>bat</strong></a>: A <code>cat</code> alternative for previewing files with syntax highlighting.</li>
+<li><a href="https://neovim.io/"><strong>nvim</strong></a>: A modern take on Vim for editing files.</li>
+</ol>
+<hr />
+<h2 id="features">Features</h2>
+<p>This script provides:</p>
+<ul>
+<li><strong>Content Search</strong>: Use <code>rg</code> to search through file contents, including hidden files.</li>
+<li><strong>Fuzzy Navigation</strong>: Pipe <code>rg</code> results into <code>fzf</code> for interactive filtering and selection.</li>
+<li><strong>Custom Keybindings</strong>: Useful shortcuts for toggling previews, selecting/deselecting files, and opening files in editors.</li>
+<li><strong>Dynamic Search Modes</strong>: Switch between <code>fzf</code> and <code>ripgrep</code> modes on the fly.</li>
+<li><strong>File Previewing</strong>: View file content with syntax highlighting, centered on the matched line.</li>
+<li><strong>Editor Integration</strong>: Open files directly in Neovim with a single keypress.</li>
+</ul>
+<hr />
+<h2 id="the-script-rg-fzf">The Script: <code>rg-fzf</code></h2>
+<p>Here’s a breakdown of the script, split into manageable chunks:</p>
+<h3 id="cleanup-temporary-files-and-initialize-search-directory">1. Cleanup Temporary Files and Initialize Search Directory</h3>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-f</span> /tmp/rg-fzf-<span class="dt">{r</span><span class="op">,</span><span class="dt">f}</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">[</span> <span class="ot">-d</span> <span class="st">&quot;</span><span class="va">$1</span><span class="st">&quot;</span> <span class="bu">]</span> <span class="kw">&amp;&amp;</span> <span class="va">SEARCH_DIR</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$1</span><span class="st">&quot;</span> <span class="kw">&amp;&amp;</span> <span class="bu">shift</span> <span class="kw">||</span> <span class="va">SEARCH_DIR</span><span class="op">=</span><span class="st">&quot;.&quot;</span></span></code></pre></div>
+<ul>
+<li>Removes temporary files created during script execution.</li>
+<li>Sets the search directory to the first argument or defaults to the current directory.</li>
+</ul>
+<hr />
+<h3 id="configure-rg-ripgrep-search">2. Configure <code>rg</code> (ripgrep) Search</h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">RG_PREFIX</span><span class="op">=</span><span class="st">&quot;rg --hidden --column --line-number --no-heading --follow --color=always --smart-case </span><span class="dt">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="st">  --glob &#39;!/.ssh&#39; --glob &#39;!/.android&#39; --glob &#39;!/.gnupg&#39; --glob &#39;!node_modules&#39;&quot;</span></span></code></pre></div>
+<ul>
+<li>Configures <code>rg</code> to:
+<ul>
+<li>Include hidden files (<code>--hidden</code>) and follow symbolic links (<code>--follow</code>).</li>
+<li>Output results with line numbers and columns (<code>--column</code>, <code>--line-number</code>).</li>
+<li>Exclude specific directories like <code>.ssh</code>, <code>.android</code>, <code>.gnupg</code>, and <code>node_modules</code>.</li>
+</ul></li>
+</ul>
+<hr />
+<h3 id="dynamic-search-query">3. Dynamic Search Query</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="va">INITIAL_QUERY</span><span class="op">=</span><span class="st">&quot;</span><span class="va">${*</span><span class="op">:-</span><span class="va">}</span><span class="st">&quot;</span></span></code></pre></div>
+<ul>
+<li>Allows the user to provide an initial search query as an argument.</li>
+</ul>
+<hr />
+<h3 id="fzf-header-configuration">4. FZF Header Configuration</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">h_padding</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%*s&#39;</span> 7 <span class="st">&#39; &#39;</span><span class="va">)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">h_gap</span><span class="op">=</span><span class="va">$(</span><span class="bu">printf</span> <span class="st">&#39;%*s&#39;</span> 2 <span class="st">&#39; &#39;</span><span class="va">)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">HEADER</span><span class="op">=</span><span class="st">&quot;</span><span class="va">${h_padding}</span><span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="st">  [1;34m Prefix[1;90m:[0mAlt</span><span class="va">${h_gap}</span><span class="dt">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="st">  [1;34m Space[1;90m:[0mfzf/ripgrep</span><span class="va">${h_gap}</span><span class="dt">\</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="st">  [1;34m A[1;90m:[0mSelect All</span><span class="va">${h_gap}</span><span class="dt">\</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="st">  [1;34m D[1;90m:[0mDeselect All</span><span class="va">${h_gap}</span><span class="dt">\</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="st">  [1;34m /[1;90m:[0mToggle Preview</span><span class="va">${h_gap}</span><span class="dt">\</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="st">  [1;34m Q[1;90m:[0mQuickfix List&quot;</span></span></code></pre></div>
+<ul>
+<li>Defines a custom header to display keybindings for better usability.</li>
+</ul>
+<hr />
+<h3 id="fzf-command-configuration">5. FZF Command Configuration</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">:</span> <span class="kw">|</span> <span class="ex">fzf</span> <span class="at">--ansi</span> <span class="at">--multi</span> <span class="at">--disabled</span> <span class="at">--query</span> <span class="st">&quot;</span><span class="va">$INITIAL_QUERY</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="st">&quot;start:reload:</span><span class="va">$RG_PREFIX</span><span class="st"> {q} </span><span class="va">$SEARCH_DIR</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="st">&quot;change:reload:sleep 0.1; </span><span class="va">$RG_PREFIX</span><span class="st"> {q} </span><span class="va">$SEARCH_DIR</span><span class="st"> || true&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="st">&quot;alt-space:transform:[[ ! </span><span class="dt">\$</span><span class="st">FZF_PROMPT =~ ripgrep ]] &amp;&amp;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="st">  echo </span><span class="dt">\&quot;</span><span class="st">rebind(change)+change-prompt(ripgrep  )+disable-search+transform-query:echo {q} &gt; /tmp/rg-fzf-f; cat /tmp/rg-fzf-r</span><span class="dt">\&quot;</span><span class="st"> ||</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="st">  echo </span><span class="dt">\&quot;</span><span class="st">unbind(change)+change-prompt(fzf  )+enable-search+transform-query:echo {q} &gt; /tmp/rg-fzf-r; cat /tmp/rg-fzf-f</span><span class="dt">\&quot;</span><span class="st">&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="st">&#39;alt-a:select-all,alt-d:deselect-all,alt-/:toggle-preview&#39;</span> <span class="dt">\</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--margin</span><span class="op">=</span>5%,10%,5%,10% <span class="at">--height</span><span class="op">=</span>100% <span class="at">--reverse</span> <span class="at">--info</span><span class="op">=</span>inline-right <span class="dt">\</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--scrollbar</span><span class="op">=</span>▐ <span class="at">--keep-right</span> <span class="at">--border</span><span class="op">=</span>block <span class="at">--ellipsis</span><span class="op">=</span> <span class="dt">\</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--prompt</span> <span class="st">&#39;ripgrep  &#39;</span> <span class="dt">\</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--delimiter</span> : <span class="dt">\</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--header</span> <span class="st">&quot;</span><span class="va">$HEADER</span><span class="st">&quot;</span> <span class="at">--header-first</span> <span class="dt">\</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--preview</span> <span class="st">&#39;bat --style=header,numbers --color=always {1} --highlight-line {2}&#39;</span> <span class="dt">\</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--preview-window</span> <span class="st">&#39;bottom,60%,border-top,+{2}+3/3,~1&#39;</span> <span class="dt">\</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="st">&quot;alt-q:execute:nvim +cw -q {+f}&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bind</span> <span class="st">&quot;enter:execute:nvim {1} +{2}&quot;</span> <span class="dt">\</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">--highlight-line</span></span></code></pre></div>
+<ul>
+<li>Pipes the output of <code>rg</code> into <code>fzf</code>.</li>
+<li>Binds keys for actions:
+<ul>
+<li><strong><code>alt-space</code></strong>: Toggle between <code>fzf</code> and <code>ripgrep</code> modes.</li>
+<li><strong><code>alt-a</code>/<code>alt-d</code></strong>: Select/deselect all results.</li>
+<li><strong><code>alt-/</code></strong>: Toggle preview visibility.</li>
+<li><strong><code>alt-q</code></strong>: Open results in Neovim’s quickfix list.</li>
+<li><strong><code>enter</code></strong>: Open the selected file in Neovim at the matched line.</li>
+</ul></li>
+<li>Previews files using <code>bat</code>, highlighting the matched line.</li>
+</ul>
+<hr />
+<h2 id="integration-with-lf-file-manager">Integration with <code>lf</code> File Manager</h2>
+<p>Integrating <code>rg-fzf</code> with <a href="https://github.com/gokcehan/lf"><strong>lf</strong></a> allows you to harness the power of <code>ripgrep</code> and <code>fzf</code> directly within the file manager. This setup lets you search for files and content effortlessly while staying within your workflow.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">map</span> <span class="pp">?</span> <span class="va">$rg</span>-fzf <span class="st">&quot;</span><span class="va">$PWD</span><span class="st">&quot;</span></span></code></pre></div>
+<h3 id="example-workflow">Example Workflow</h3>
+<ol type="1">
+<li>Open <code>lf</code> in a project directory.</li>
+<li>Press <code>?</code> to launch the <code>rg-fzf</code> search interface.</li>
+<li>Use fuzzy searching to locate files or content.</li>
+<li>Select a result, and it will open in your editor at the specified location.</li>
+</ol>
+<h2 id="why-it-works">Why It Works</h2>
+<p>This script combines the raw power of <code>rg</code> with the interactive filtering and customization of <code>fzf</code>. Its responsive UI, keyboard shortcuts, and seamless editor integration make it incredibly efficient for searching and editing code.</p>
+<hr />
+<h2 id="try-it-yourself">Try It Yourself</h2>
+<p>Make sure you have ripgrep and fzf installed, and give this script a try in your terminal for a more powerful file navigation experience. Happy coding!</p>
+</main>
+
+<script>
+;(function() {
+  // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+  var selector = '.task-list > li > input[type="checkbox"]';
+  var checkboxes = document.querySelectorAll(selector);
+  Array.from(checkboxes).forEach((checkbox) => {
+    var wasChecked = checkbox.checked;
+    checkbox.disabled = false;
+    checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc-markdown-css-theme" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Artificial Intelligence for a Chess Engine</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/skylighting-solarized-theme.css" />
+</head>
+<body>
+
+<header>
+<h1 class="title">Artificial Intelligence for a Chess Engine</h1>
+<blockquote class="metadata">
+</blockquote>
+</header>
+
+
+<main>
+<figure>
+<img src="../img/chess.jpeg" alt="Chess model" />
+<figcaption aria-hidden="true">Chess model</figcaption>
+</figure>
+<ul>
+<li>Developed a neural networkl using Multi-Layer Perceptron to evaluate chess positions.</li>
+<li>Preprocessed a large dataset of chess positions with Stockfish evaluations, encoding them into binary matrices.</li>
+<li>Achieved competitive performance in model evaluation against Stockfish using PyTorch.</li>
+</ul>
+</main>
+
+<script>
+;(function() {
+  // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+  var selector = '.task-list > li > input[type="checkbox"]';
+  var checkboxes = document.querySelectorAll(selector);
+  Array.from(checkboxes).forEach((checkbox) => {
+    var wasChecked = checkbox.checked;
+    checkbox.disabled = false;
+    checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+  });
+})();
+</script>
+</body>
+</html>

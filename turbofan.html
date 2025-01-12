@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc-markdown-css-theme" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Turbofan CAD Design</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/skylighting-solarized-theme.css" />
+</head>
+<body>
+
+<header>
+<h1 class="title">Turbofan CAD Design</h1>
+<blockquote class="metadata">
+</blockquote>
+</header>
+
+
+<main>
+<figure>
+<img src="../img/turbofan1.png" alt="Turbofan Jet Engine" />
+<figcaption aria-hidden="true">Turbofan Jet Engine</figcaption>
+</figure>
+<ul>
+<li>Modeled the Jet Engine Parts namely:
+<ul>
+<li>Propeller</li>
+<li>High Pressure Compressors</li>
+<li>Low Pressure Compressors</li>
+<li>Combustion Chamber</li>
+<li>High Pressure Turbine</li>
+<li>Low Pressure Turbine</li>
+<li>Central Shaft and Outer Casing.</li>
+</ul></li>
+<li>Modelled the CAD Assembly in PTC Creo</li>
+<li>Simulated the mechanisms of the Turbofan.</li>
+</ul>
+<figure>
+<video src="../img/vid_turbofan.mp4" controls=""><a href="../img/vid_turbofan.mp4">Turbofan Jet Engine Simulation</a></video>
+<figcaption aria-hidden="true">Turbofan Jet Engine Simulation</figcaption>
+</figure>
+</main>
+
+<script>
+;(function() {
+  // Non-essential if user has JavaScript off. Just makes checkboxes look nicer.
+  var selector = '.task-list > li > input[type="checkbox"]';
+  var checkboxes = document.querySelectorAll(selector);
+  Array.from(checkboxes).forEach((checkbox) => {
+    var wasChecked = checkbox.checked;
+    checkbox.disabled = false;
+    checkbox.addEventListener('click', (ev) => {ev.target.checked = wasChecked});
+  });
+})();
+</script>
+</body>
+</html>
